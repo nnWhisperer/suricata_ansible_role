@@ -31,12 +31,12 @@
 
 - name: Debian | Include install tasks
   include_tasks: install-Debian.yml
-  when: ansible_distribution == "Debian"
+  when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
 
 - name: Linux | Include customize tasks
   include_tasks: customize-Linux.yml
-  when: ansible_os_family != "Windows" and ansible_distribution != "Debian"
+  when: ansible_os_family != "Windows" and ansible_os_family != "Debian"
 
 - name: Debian | Include customize tasks
   include_tasks: customize-Debian.yml
-  when: ansible_distribution == "Debian"
+  when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"

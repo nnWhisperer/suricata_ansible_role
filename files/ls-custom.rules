@@ -1,1 +1,6 @@
-alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LS WORDPRESS XMLRPC.PHP Brute Force Attempt"; flow:established,to_server; content:"POST"; http_method; content:"xmlrpc.php"; http_uri; endswith; threshold:type both, track by_src, count 10, seconds 60; classtype:attempted-admin; sid:1000001; rev:2; metadata:created 2024-12-03, updated 2024-12-03, attack_target WordPress, deployment Production, signature_severity Major, deployment Production;)
+# Default Suricata custom rules
+# Add custom rules via suricata_custom_rules_src variable
+# This file contains minimal default rules; project-specific rules should be passed externally
+
+# WordPress XMLRPC brute force detection (external)
+alert http $EXTERNAL_NET any -> $HOME_NET any (msg:"LS WORDPRESS XMLRPC.PHP Brute Force Attempt"; flow:established,to_server; content:"POST"; http_method; content:"xmlrpc.php"; http_uri; endswith; threshold:type both, track by_src, count 10, seconds 60; classtype:attempted-admin; sid:1000001; rev:2; metadata:created 2024-12-03, updated 2024-12-03, attack_target WordPress, deployment Production, signature_severity Major;)

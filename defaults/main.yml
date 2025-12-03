@@ -1,2 +1,12 @@
 ---
 # defaults file for suricata-ansible-role
+
+# Network interface to monitor (defaults to primary interface if not set)
+suricata_interface: "{{ ansible_default_ipv4.interface | default('eth0') }}"
+
+# Home network definition (CIDR notation)
+suricata_home_net: "[{{ ansible_default_ipv4.address | default('192.168.1.1') }}/32]"
+
+# Custom rules file path (relative to playbook or absolute)
+# When set, this file is copied to /var/lib/suricata/rules/ instead of the default
+suricata_custom_rules_src: ""

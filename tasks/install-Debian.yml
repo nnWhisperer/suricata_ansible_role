@@ -4,10 +4,22 @@
     name: libnetfilter-queue-dev
     state: present
 
-- name: Add backports repository
+- name: Add backports repository (Debian only)
   ansible.builtin.apt_repository:
     repo: deb http://http.debian.net/debian {{ ansible_distribution_release }}-backports main
     state: present
+  when: ansible_distribution == "Debian"
+
+- name: Add Suricata PPA for Ubuntu
+  ansible.builtin.apt_repository:
+    repo: ppa:oisf/suricata-stable
+    state: present
+  when: ansible_distribution == "Ubuntu"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 0
 
 - name: Install Suricata
   ansible.builtin.apt:
