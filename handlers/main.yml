@@ -1,2 +1,7 @@
 ---
 # handlers file for suricata-ansible-role
+
+- name: Restart Suricata
+  ansible.builtin.service:
+    name: suricata.service
+    state: restarted

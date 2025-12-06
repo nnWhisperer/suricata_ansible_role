@@ -1,26 +1,33 @@
 ---
-- name: Copy Suricata configuration file
+# Copy base Suricata configuration, then customize with lineinfile for idempotency
+
+- name: Copy Suricata base configuration file
   ansible.builtin.copy:
     src: suricata.yaml
     dest: /etc/suricata/suricata.yaml
-    backup: false
     owner: root
     group: root
     mode: 0640
+    backup: true
+    force: false  # Only copy if file doesn't exist - let replace handle updates
+  notify: Restart Suricata
   tags: update
 
-- name: Configure server IP address in suricata.yaml HOME_NET
+- name: Configure HOME_NET in suricata.yaml
   ansible.builtin.lineinfile:
     path: /etc/suricata/suricata.yaml
-    regex: '^\s+HOME_NET:.*$'
-    line: "    HOME_NET: \"{{ suricata_home_net }}\""
+    regexp: '^\s*HOME_NET:.*$'
+    line: '    HOME_NET: "{{ suricata_home_net }}"'
+    backup: false
+  notify: Restart Suricata
   tags: update
 
-- name: Configure server interface name in suricata.yaml
+- name: Configure interface in suricata.yaml
   ansible.builtin.replace:
     path: /etc/suricata/suricata.yaml
-    regexp: '- interface: eno1'
-    replace: '- interface: {{ suricata_interface }}'
+    regexp: '(^\s*- interface:) \S+'
+    replace: '\1 {{ suricata_interface }}'
+  notify: Restart Suricata
   tags: update
 
 - name: Copy Suricata Systemd file
@@ -31,6 +38,7 @@
     owner: root
     group: root
     mode: 0640
+  notify: Restart Suricata
 
 - name: Create necessary directories
   ansible.builtin.file:
@@ -40,24 +48,34 @@
     group: root
     mode: 0755
 
-- name: Copy Custom Rules file (external source)
+- name: Create /etc/suricata/rules directory for local rules
+  ansible.builtin.file:
+    path: /etc/suricata/rules
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Copy Custom Rules file (external source) to suricata-update local path
   ansible.builtin.copy:
     src: "{{ suricata_custom_rules_src }}"
-    dest: /var/lib/suricata/rules/ls-custom.rules
+    dest: /etc/suricata/rules/local.rules
     owner: root
     group: root
     mode: 0644
   when: suricata_custom_rules_src != ""
+  notify: Restart Suricata
   tags: update
 
-- name: Copy Custom Rules file (default)
+- name: Copy Custom Rules file (default) to suricata-update local path
   ansible.builtin.copy:
     src: ls-custom.rules
-    dest: /var/lib/suricata/rules
+    dest: /etc/suricata/rules/local.rules
     owner: root
     group: root
     mode: 0644
   when: suricata_custom_rules_src == ""
+  notify: Restart Suricata
   tags: update
 
 - name: Copy custom disabled rules list
@@ -67,22 +85,24 @@
     owner: root
     group: root
     mode: 0644
+  notify: Restart Suricata
   tags: update
 
-- name: Update Suricata Rules
+- name: Update Suricata Rules (includes local.rules automatically)
   ansible.builtin.command:
-    cmd: suricata-update --no-merge --no-test
-  tags: update
+    cmd: suricata-update --local /etc/suricata/rules/local.rules
+  changed_when: false
   ignore_errors: true
+  tags: update
 
-- name: Configure and start suricata service
+- name: Ensure suricata service is enabled and started
   ansible.builtin.service:
     name: suricata.service
     enabled: true
-    state: restarted
+    state: started
   tags: update
 
-- name: Ensure a a cron job to run suricata-update is created
+- name: Ensure a cron job to run suricata-update is created
   ansible.builtin.cron:
     name: "suricata-update"
     minute: "0"
